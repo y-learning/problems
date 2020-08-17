@@ -205,6 +205,15 @@ sealed class Result<out A> : Serializable {
         fun <A> failure(exception: Exception): Result<A> =
             Failure(IllegalStateException(exception))
 
+        fun <A> of(f: () -> A): Result<A> =
+            try {
+                Result(f())
+            } catch (e: RuntimeException) {
+                failure(e)
+            } catch (e: Exception) {
+                failure(e)
+            }
+
         fun <T> of(predicate: (T) -> Boolean, value: T, failMsg: String):
                 Result<T> = try {
             when (predicate(value)) {
