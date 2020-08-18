@@ -59,9 +59,31 @@ class PropertyReader(configFileName: String) {
 
     fun readAsListOfBoolean(name: String): Result<List<Boolean>> =
         readAsList(name, String::toBoolean)
+
+    fun <T> readAsType(name: String, f: (String) -> Result<T>): Result<T> =
+        readAsString(name).flatMap {
+            try {
+                f(it)
+            } catch (e: Exception) {
+                Result.failure<T>(
+                    "Invalid value `$it`" +
+                            " while parsing property `$name`")
+            }
+        }
+
+    inline
+    fun <reified T : Enum<T>> readAsEnum(name: String,
+                                         enumClass: Class<T>): Result<T> =
+        readAsType(name) { s: String ->
+            Result.of(
+                { enumValueOf<T>(s) }, "Error parsing property `$name`: " +
+                        "value `$s` can't be parsed tp ${enumClass.name}")
+        }
 }
 
 data class Person(val id: Int, val firstName: String, val lastName: String)
+
+enum class Type { SERIAL, PARALLEL }
 
 fun main() {
     val propertyReader = PropertyReader("/config.properties")
@@ -95,6 +117,11 @@ fun main() {
     person.forEach(onSuccess = { println(it) }, onFailure = { println(it) })
 
     propertyReader.readAsListOfInt("list")
+        .forEach(
+            onSuccess = { println(it) },
+            onFailure = { println(it) })
+
+    propertyReader.readAsEnum("type", Type::class.java)
         .forEach(
             onSuccess = { println(it) },
             onFailure = { println(it) })
