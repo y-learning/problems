@@ -214,6 +214,19 @@ sealed class Result<out A> : Serializable {
                 failure(e)
             }
 
+        fun <A> of(f: () -> A, failMsg: String): Result<A> {
+            fun formatException(e: Exception): String =
+                "${e.javaClass.name}: $failMsg"
+
+            return try {
+                Result(f())
+            } catch (e: RuntimeException) {
+                failure(formatException(e))
+            } catch (e: Exception) {
+                failure(formatException(e))
+            }
+        }
+
         fun <T> of(predicate: (T) -> Boolean, value: T, failMsg: String):
                 Result<T> = try {
             when (predicate(value)) {
