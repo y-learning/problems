@@ -216,7 +216,7 @@ sealed class Result<out A> : Serializable {
 
         fun <A> of(f: () -> A, failMsg: String): Result<A> {
             fun formatException(e: Exception): String =
-                "${e.javaClass.name}: $failMsg"
+                "${e.javaClass.name}: $failMsg. ${e.message}"
 
             return try {
                 Result(f())
