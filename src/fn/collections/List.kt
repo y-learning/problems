@@ -260,6 +260,14 @@ sealed class List<out E> {
             Result.failure(e)
         }
 
+    fun toArrayList(): java.util.ArrayList<@UnsafeVariance E> =
+        foldLeft(ArrayList()) { list ->
+            { e ->
+                list.add(e)
+                list
+            }
+        }
+
     abstract class Empty<E> : List<E>() {
         override val length: Int get() = 0
 
