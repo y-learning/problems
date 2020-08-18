@@ -111,8 +111,6 @@ class PropertyReader(
             PropertyReader(
                 readPropertiesFromString(propString), "String: $propString")
     }
-
-
 }
 
 data class Person(val id: Int,
