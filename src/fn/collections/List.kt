@@ -524,5 +524,8 @@ sealed class List<out E> {
 
         fun <T> concatViaFoldLeft(list1: List<T>, list2: List<T>): List<T> =
             list1.reverse().foldLeft(list2, { x -> x::cons })
+
+        fun fromSeparated(str: String, separator: String): List<String> =
+            List(*str.split(separator).toTypedArray())
     }
 }

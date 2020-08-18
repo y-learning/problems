@@ -1,5 +1,7 @@
 package properties
 
+import fn.collections.List
+import fn.collections.List.Companion.fromSeparated
 import fn.result.Result
 
 import java.io.IOException
@@ -41,6 +43,22 @@ class PropertyReader(configFileName: String) {
                 { it.toInt() },
                 "Invalid value while parsing property `$name` to Int: `$it`")
         }
+
+    fun <T> readAsList(name: String, f: (String) -> T): Result<List<T>> =
+        readAsString(name).flatMap {
+            Result.of(
+                { fromSeparated(it, ",").map(f) },
+                "Invalid value while parsing property `$name` to List: `$it`")
+        }
+
+    fun readAsListOfInt(name: String): Result<List<Int>> =
+        readAsList(name, String::toInt)
+
+    fun readAsListOfDouble(name: String): Result<List<Double>> =
+        readAsList(name, String::toDouble)
+
+    fun readAsListOfBoolean(name: String): Result<List<Boolean>> =
+        readAsList(name, String::toBoolean)
 }
 
 data class Person(val id: Int, val firstName: String, val lastName: String)
@@ -75,4 +93,9 @@ fun main() {
         }
 
     person.forEach(onSuccess = { println(it) }, onFailure = { println(it) })
+
+    propertyReader.readAsListOfInt("list")
+        .forEach(
+            onSuccess = { println(it) },
+            onFailure = { println(it) })
 }
