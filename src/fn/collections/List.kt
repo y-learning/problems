@@ -260,6 +260,14 @@ sealed class List<out E> {
             Result.failure(e)
         }
 
+    fun toArrayList(): java.util.ArrayList<@UnsafeVariance E> =
+        foldLeft(ArrayList()) { list ->
+            { e ->
+                list.add(e)
+                list
+            }
+        }
+
     abstract class Empty<E> : List<E>() {
         override val length: Int get() = 0
 
@@ -524,5 +532,8 @@ sealed class List<out E> {
 
         fun <T> concatViaFoldLeft(list1: List<T>, list2: List<T>): List<T> =
             list1.reverse().foldLeft(list2, { x -> x::cons })
+
+        fun fromSeparated(str: String, separator: String): List<String> =
+            List(*str.split(separator).toTypedArray())
     }
 }
