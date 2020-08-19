@@ -1,4 +1,5 @@
 import fn.collections.List
+import fn.collections.sequence
 import fn.result.Result
 
 import org.jdom2.Element
@@ -56,11 +57,9 @@ fun readDocument(xml: String, rootElementName: String): Result<List<Element>> =
         }
     }
 
-fun <A> printList(list: List<A>): Unit = list.forEach(::println)
-
 fun <T> readXmlFile(path: () -> FilePath,
                     rootName: () -> ElementName,
-                    presenter: (Element) -> T,
+                    presenter: (Element) -> Result<T>,
                     effect: (List<T>) -> Unit): () -> Unit = {
     path().value
         .flatMap { _path: String ->
@@ -69,8 +68,8 @@ fun <T> readXmlFile(path: () -> FilePath,
                     readFileToString(_path)
                         .flatMap { xmlDoc: String ->
                             readDocument(xmlDoc, _rootName)
-                                .map { elements: List<Element> ->
-                                    elements.map(presenter)
+                                .flatMap { elements: List<Element> ->
+                                    sequence(elements.map(presenter))
                                 }
                         }
                 }
@@ -85,14 +84,29 @@ const val format: String = """First Name : %s
 
 private val elementNames = List("firstName", "lastName", "email", "salary")
 
-private fun processElement(element: Element): String =
-    String.format(format, *elementNames.map { element.getChildText(it) }
-        .toArrayList()
-        .toArray())
+private fun getChildText(element: Element, name: String) =
+    (element.getChildText(name)
+        ?: "The element name `$name` is not a child of ${element.name}")
+
+private fun processElement(element: Element): Result<String> =
+    try {
+        Result(String.format(format, *elementNames.map {
+            getChildText(element, it)
+        }.toArrayList()
+            .toArray()))
+    } catch (e: java.util.MissingFormatArgumentException) {
+        Result.failure("Error while formatting an element." +
+                               "There is probably a missing element name" +
+                               " in the list of element names $elementNames")
+    } catch (e: Exception) {
+        Result.failure("Error while formatting an element. ${e.message}")
+    }
 
 fun getXmlFilePath(): FilePath = FilePath("./src/file.xml")
 
 fun getRootElementName(): ElementName = ElementName("staff")
+
+fun <A> printList(list: List<A>): Unit = list.forEach(::println)
 
 fun main() {
     val program = readXmlFile(::getXmlFilePath,
@@ -100,5 +114,11 @@ fun main() {
                               ::processElement,
                               ::printList)
 
-    program()
+    try {
+        program()
+    } catch (e: Exception) {
+        println("A ${e.javaClass.name} occurred: ${e.message}")
+    }
+
+    print("Finished.")
 }
