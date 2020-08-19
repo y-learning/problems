@@ -9,9 +9,31 @@ import java.io.File
 import java.io.IOException
 import java.io.StringReader
 
-fun getXmlFilePath(): Result<String> = Result.of { "./src/file.xml" }
+data class FilePath private constructor(val value: Result<String>) {
 
-fun getRootElementName(): Result<String> = Result.of { "staff" }
+    companion object {
+
+        private fun isValidPath(filePath: String): Boolean =
+            filePath.isNotEmpty()
+
+        operator fun invoke(value: String): FilePath =
+            FilePath(Result.of({ isValidPath(it) }, value,
+                               "Invalid file path: $value"))
+    }
+}
+
+data class ElementName private constructor(val value: Result<String>) {
+
+    companion object {
+
+        private fun isValidName(filePath: String): Boolean =
+            filePath.isNotEmpty()
+
+        operator fun invoke(value: String): ElementName =
+            ElementName(Result.of({ isValidName(it) }, value,
+                                  "Invalid element name: $value"))
+    }
+}
 
 fun readFileToString(path: String): Result<String> =
     Result.of { File(path).readText() }
@@ -57,14 +79,13 @@ fun toStringList(elements: List<Element>,
 
 fun <A> process(list: List<A>): Unit = list.forEach(::println)
 
-// TODO: 1. Fix this function, it takes two args of the same type.
-fun readXmlFile(path: () -> Result<String>,
-                rootName: () -> Result<String>,
+fun readXmlFile(path: () -> FilePath,
+                rootName: () -> ElementName,
                 format: Pair<String, List<String>>,
                 effect: (List<String>) -> Unit): () -> Unit = {
-    path()
+    path().value
         .flatMap { _path: String ->
-            rootName()
+            rootName().value
                 .flatMap { _rootName: String ->
                     readFileToString(_path)
                         .flatMap { xmlDoc: String ->
@@ -76,6 +97,10 @@ fun readXmlFile(path: () -> Result<String>,
                 }
         }.forEach(onSuccess = effect, onFailure = { it.printStackTrace() })
 }
+
+fun getXmlFilePath(): FilePath = FilePath("./src/file.xml")
+
+fun getRootElementName(): ElementName = ElementName("staff")
 
 fun main() {
     val program = readXmlFile(::getXmlFilePath,
